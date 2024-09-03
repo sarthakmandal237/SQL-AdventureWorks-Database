@@ -1,321 +1,90 @@
-Project Structure
-
-banking-system-database/
-├── README.md
-├── sql/
-│   ├── create_tables.sql
-│   ├── stored_procedures.sql
-├── docs/
-│   ├── database_schema.md
-│   ├── table_definitions.md
-│   ├── stored_procedures.md
-
-README.md
-
-# Banking System Database
-
-This project involves designing and implementing a database schema for a banking system. The database is capable of managing customer information, accounts, transactions, and other relevant data.
-
-## Project Objectives
-1. Create a relational database schema for the banking system.
-2. Implement tables to store customer information, account details, and transaction history.
-3. Develop stored procedures to perform various operations such as creating customers, opening accounts, depositing money, withdrawing money, transferring amount from one account to another, and viewing transaction history.
-4. Ensure data integrity, security, and performance of the database.
-5. Provide necessary documentation including table definitions, stored procedures, and any additional instructions or notes.
-
-## Deliverables
-1. SQL script containing table definitions for customer information, accounts, and transactions.
-2. SQL script containing stored procedures for creating customers, opening accounts, depositing money, withdrawing money, transferring amount from one account to another, and viewing transaction history.
-3. Documentation detailing the database schema, table definitions, and stored procedures.
-
-## Getting Started
-To set up the database, execute the SQL scripts in the `sql` directory in the following order:
-1. `create_tables.sql`
-2. `stored_procedures.sql`
-
-## Documentation
-Detailed documentation is available in the `docs` directory:
-- [Database Schema](docs/database_schema.md)
-- [Table Definitions](docs/table_definitions.md)
-- [Stored Procedures](docs/stored_procedures.md)
-
-sql/create_tables.sql
-
-CREATE DATABASE BankingSystem;
-GO
-USE BankingSystem;
-GO
-
-CREATE TABLE Customers (
-    CustomerID INT PRIMARY KEY IDENTITY(1,1),
-    FirstName VARCHAR(50) NOT NULL,
-    LastName VARCHAR(50) NOT NULL,
-    DateOfBirth DATE,
-    Email VARCHAR(100),
-    Phone VARCHAR(15),
-    Address VARCHAR(255)
-);
-
-CREATE TABLE Accounts (
-    AccountID INT PRIMARY KEY IDENTITY(1,1),
-    CustomerID INT FOREIGN KEY REFERENCES Customers(CustomerID),
-    AccountNumber VARCHAR(20) UNIQUE NOT NULL,
-    AccountType VARCHAR(20) NOT NULL,
-    Balance DECIMAL(15,2) NOT NULL,
-    DateOpened DATE NOT NULL
-);
-
-CREATE TABLE Transactions (
-    TransactionID INT PRIMARY KEY IDENTITY(1,1),
-    AccountID INT FOREIGN KEY REFERENCES Accounts(AccountID),
-    TransactionType VARCHAR(20) NOT NULL,
-    Amount DECIMAL(15,2) NOT NULL,
-    TransactionDate DATETIME NOT NULL,
-    Description VARCHAR(255)
-);
-
-
-sql/stored_procedures.sql
-
-USE BankingSystem;
-GO
-
-CREATE PROCEDURE CreateCustomer
-    @FirstName VARCHAR(50),
-    @LastName VARCHAR(50),
-    @DateOfBirth DATE,
-    @Email VARCHAR(100),
-    @Phone VARCHAR(15),
-    @Address VARCHAR(255)
-AS
-BEGIN
-    INSERT INTO Customers (FirstName, LastName, DateOfBirth, Email, Phone, Address)
-    VALUES (@FirstName, @LastName, @DateOfBirth, @Email, @Phone, @Address);
-END;
-GO
-
-CREATE PROCEDURE OpenAccount
-    @CustomerID INT,
-    @AccountNumber VARCHAR(20),
-    @AccountType VARCHAR(20),
-    @Balance DECIMAL(15,2),
-    @DateOpened DATE
-AS
-BEGIN
-    INSERT INTO Accounts (CustomerID, AccountNumber, AccountType, Balance, DateOpened)
-    VALUES (@CustomerID, @AccountNumber, @AccountType, @Balance, @DateOpened);
-END;
-GO
-
-CREATE PROCEDURE DepositMoney
-    @AccountID INT,
-    @Amount DECIMAL(15,2),
-    @TransactionDate DATETIME,
-    @Description VARCHAR(255)
-AS
-BEGIN
-    UPDATE Accounts
-    SET Balance = Balance + @Amount
-    WHERE AccountID = @AccountID;
-
-    INSERT INTO Transactions (AccountID, TransactionType, Amount, TransactionDate, Description)
-    VALUES (@AccountID, 'Deposit', @Amount, @TransactionDate, @Description);
-END;
-GO
-
-CREATE PROCEDURE WithdrawMoney
-    @AccountID INT,
-    @Amount DECIMAL(15,2),
-    @TransactionDate DATETIME,
-    @Description VARCHAR(255)
-AS
-BEGIN
-    UPDATE Accounts
-    SET Balance = Balance - @Amount
-    WHERE AccountID = @AccountID;
-
-    INSERT INTO Transactions (AccountID, TransactionType, Amount, TransactionDate, Description)
-    VALUES (@AccountID, 'Withdrawal', @Amount, @TransactionDate, @Description);
-END;
-GO
-
-CREATE PROCEDURE TransferMoney
-    @FromAccountID INT,
-    @ToAccountID INT,
-    @Amount DECIMAL(15,2),
-    @TransactionDate DATETIME,
-    @Description VARCHAR(255)
-AS
-BEGIN
-    UPDATE Accounts
-    SET Balance = Balance - @Amount
-    WHERE AccountID = @FromAccountID;
-
-    UPDATE Accounts
-    SET Balance = Balance + @Amount
-    WHERE AccountID = @ToAccountID;
-
-    INSERT INTO Transactions (AccountID, TransactionType, Amount, TransactionDate, Description)
-    VALUES (@FromAccountID, 'Transfer Out', @Amount, @TransactionDate, @Description);
-
-    INSERT INTO Transactions (AccountID, TransactionType, Amount, TransactionDate, Description)
-    VALUES (@ToAccountID, 'Transfer In', @Amount, @TransactionDate, @Description);
-END;
-GO
-
-CREATE PROCEDURE ViewTransactionHistory
-    @AccountID INT
-AS
-BEGIN
-    SELECT * FROM Transactions
-    WHERE AccountID = @AccountID
-    ORDER BY TransactionDate DESC;
-END;
-GO
-
-
-docs/database_schema.md
-
-# Database Schema
-
-The database schema for the banking system includes the following tables:
-
-- Customers
-- Accounts
-- Transactions
-
-## ER Diagram
-(To be added if a visual diagram is created)
-
-## Relationships
-- A customer can have multiple accounts.
-- An account can have multiple transactions.
-
-
-docs/table_definitions.md
-
-# Table Definitions
-
-## Customers Table
-
-| Column       | Data Type    | Description                |
-|--------------|--------------|----------------------------|
-| CustomerID   | INT          | Primary Key                |
-| FirstName    | VARCHAR(50)  | Customer's first name      |
-| LastName     | VARCHAR(50)  | Customer's last name       |
-| DateOfBirth  | DATE         | Customer's date of birth   |
-| Email        | VARCHAR(100) | Customer's email address   |
-| Phone        | VARCHAR(15)  | Customer's phone number    |
-| Address      | VARCHAR(255) | Customer's address         |
-
-## Accounts Table
-
-| Column       | Data Type    | Description                    |
-|--------------|--------------|--------------------------------|
-| AccountID    | INT          | Primary Key                    |
-| CustomerID   | INT          | Foreign Key referencing Customers(CustomerID) |
-| AccountNumber| VARCHAR(20)  | Unique account number          |
-| AccountType  | VARCHAR(20)  | Type of account (e.g., Savings, Checking) |
-| Balance      | DECIMAL(15,2)| Account balance                |
-| DateOpened   | DATE         | Date when the account was opened |
-
-## Transactions Table
-
-| Column         | Data Type    | Description                    |
-|----------------|--------------|--------------------------------|
-| TransactionID  | INT          | Primary Key                    |
-| AccountID      | INT          | Foreign Key referencing Accounts(AccountID) |
-| TransactionType| VARCHAR(20)  | Type of transaction (Deposit, Withdrawal, Transfer) |
-| Amount         | DECIMAL(15,2)| Transaction amount             |
-| TransactionDate| DATETIME     | Date and time of the transaction |
-| Description    | VARCHAR(255) | Description of the transaction |
-
-
-
-docs/stored_procedures.md
-
-# Stored Procedures
-
-## CreateCustomer
-
-Creates a new customer record.
-
-### Parameters
-- `@FirstName` VARCHAR(50): Customer's first name
-- `@LastName` VARCHAR(50): Customer's last name
-- `@DateOfBirth` DATE: Customer's date of birth
-- `@Email` VARCHAR(100): Customer's email address
-- `@Phone` VARCHAR(15): Customer's phone number
-- `@Address` VARCHAR(255): Customer's address
-
-### Example
-```sql
-EXEC CreateCustomer 'John', 'Doe', '1980-01-01', 'john.doe@example.com', '555-1234', '123 Elm St';
-
-
-
-OpenAccount
-Opens a new account for a customer.
-
-Parameters
-@CustomerID INT: Customer's ID
-@AccountNumber VARCHAR(20): Unique account number
-@AccountType VARCHAR(20): Type of account (e.g., Savings, Checking)
-@Balance DECIMAL(15,2): Initial balance
-@DateOpened DATE: Date the account is opened
-
-Example
-
-EXEC OpenAccount 1, 'ACC123456789', 'Savings', 1000.00, '2024-01-01';
-
-
-DepositMoney
-Deposits money into an account.
-
-Parameters
-@AccountID INT: Account's ID
-@Amount DECIMAL(15,2): Amount to deposit
-@TransactionDate DATETIME: Date and time of the transaction
-@Description VARCHAR(255): Description of the transaction
-
-Example
-EXEC DepositMoney 1, 500.00, '2024-01-02 10:00:00', 'Initial Deposit';
-
-
-WithdrawMoney
-Withdraws money from an account.
-
-Parameters
-@AccountID INT: Account's ID
-@Amount DECIMAL(15,2): Amount to withdraw
-@TransactionDate DATETIME: Date and time of the transaction
-@Description VARCHAR(255): Description of the transaction
-
-Example
-EXEC WithdrawMoney 1, 200.00, '2024-01-03 11:00:00', 'ATM Withdrawal';
-
-
-
-TransferMoney
-Transfers money from one account to another.
-
-Parameters
-@FromAccountID INT: Source account's ID
-@ToAccountID INT: Destination account's ID
-@Amount DECIMAL(15,2): Amount to transfer
-@TransactionDate DATETIME: Date and time of the transaction
-@Description VARCHAR(255): Description of the transaction
-
-Example
-EXEC TransferMoney 1, 2, 100.00, '2024-01-04 12:00:00', 'Transfer to another account';
-
-
-ViewTransactionHistory
-Retrieves the transaction history of an account.
-
-Parameters
-@AccountID INT: Account's ID
-
-Example
-EXEC ViewTransactionHistory 1;
-
+--Employee Chek IN and check out Calculation
+--To meet the company's requirements, need to calculate the total work hours of employees in a day based on their check-in and check-out times.
+
+WITH EmployeeWorkLog AS (
+    SELECT
+        EmpID,
+        Name,
+        TO_TIMESTAMP("CheckIn-CheckOut Time", 'DD-MM-YYYY HH24:MI') AS LogTime,
+        Attendance
+    FROM
+        EmployeeLog
+),
+FirstCheckIn AS (
+    SELECT
+        EmpID,
+        Name,
+        MIN(LogTime) AS FirstCheckInTime
+    FROM
+        EmployeeWorkLog
+    WHERE
+        Attendance = 'IN'
+    GROUP BY
+        EmpID, Name
+),
+LastCheckOut AS (
+    SELECT
+        EmpID,
+        Name,
+        MAX(LogTime) AS LastCheckOutTime
+    FROM
+        EmployeeWorkLog
+    WHERE
+        Attendance = 'OUT'
+    GROUP BY
+        EmpID, Name
+),
+TotalOutCount AS (
+    SELECT
+        EmpID,
+        Name,
+        COUNT(*) AS TotalOutCount
+    FROM
+        EmployeeWorkLog
+    WHERE
+        Attendance = 'OUT'
+    GROUP BY
+        EmpID, Name
+),
+WorkSessions AS (
+    SELECT
+        e1.EmpID,
+        e1.Name,
+        e1.LogTime AS CheckInTime,
+        MIN(e2.LogTime) AS CheckOutTime
+    FROM
+        EmployeeWorkLog e1
+    JOIN
+        EmployeeWorkLog e2 ON e1.EmpID = e2.EmpID
+    WHERE
+        e1.Attendance = 'IN'
+        AND e2.Attendance = 'OUT'
+        AND e1.LogTime < e2.LogTime
+    GROUP BY
+        e1.EmpID, e1.Name, e1.LogTime
+),
+TotalWorkHours AS (
+    SELECT
+        EmpID,
+        Name,
+        SUM(EXTRACT(HOUR FROM (CheckOutTime - CheckInTime)) * 60 + EXTRACT(MINUTE FROM (CheckOutTime - CheckInTime))) AS TotalWorkMinutes
+    FROM
+        WorkSessions
+    GROUP BY
+        EmpID, Name
+)
+SELECT
+    FC.EmpID,
+    FC.Name,
+    FC.FirstCheckInTime,
+    LC.LastCheckOutTime,
+    TOC.TotalOutCount,
+    TO_CHAR(FLOOR(TWH.TotalWorkMinutes / 60), 'FM00') || ':' || LPAD(MOD(TWH.TotalWorkMinutes, 60), 2, '0') AS TotalWorkHours
+FROM
+    FirstCheckIn FC
+JOIN
+    LastCheckOut LC ON FC.EmpID = LC.EmpID
+JOIN
+    TotalOutCount TOC ON FC.EmpID = TOC.EmpID
+JOIN
+    TotalWorkHours TWH ON FC.EmpID = TWH.EmpID;
